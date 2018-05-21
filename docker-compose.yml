@@ -23,6 +23,8 @@ services:
       - UMASK=000
       - PUID=$PUID
       - PGID=$PGID
+    ports:
+      - 32400:32400
 
 
   deluge:
