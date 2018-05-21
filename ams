@@ -116,7 +116,7 @@ install_ams() {
   touch acme.json;
   chmod 600 acme.json;
   docker network create rxproxy &> /dev/null;
-  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker &> /dev/null;;
+  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker &> /dev/null;
 
 
   ######
@@ -155,7 +155,7 @@ stop_ams() {
   TMPPWD=$PWD;
   cd ~/.rxstream/;
   echo "Stopping";
-  docker stop traefik && docker rm traefik &> /dev/null;;
+  docker stop traefik && docker rm traefik &> /dev/null;
   docker-compose down &> /dev/null;
   cd $TMPPWD;  
   echo "Stopped";
