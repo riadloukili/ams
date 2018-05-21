@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+
+##########
+# Helpers
+##########
+command_exists () {
+  type "$1" &> /dev/null ;
+}
+
+########
+# FUNCTIONS
+########
+install_ams() {
+  
+  if command_exists jq; then
+    echo "jq exists, I can proceed";
+  else
+    echo "jq is definetely not here, I'm getting it now";
+    ### INSTALL JQ
+    sudo apt-get install -y jq &> /dev/null;
+    echo "jq has been installed";
+  fi
+
+  if command_exists curl; then
+    echo "cURL... Check (y)";
+  else
+    echo "Imma get cURL cause it's not here";
+    sudo apt-get install -y curl &> /dev/null;
+    echo "Done.. :)";
+  fi
+
+  if command_exists docker-compose; then
+    echo "Docker Compose was found, you're good to go...";
+  else
+    echo "I didn't find Docker Compose, let me get it for ya";
+    DC_VERSION=$( curl -s https://api.github.com/repos/docker/compose/releases/latest | jq --raw-output '.name' );
+    ### INSTALL DOCKER COMPOSE
+    sudo curl -L https://github.com/docker/compose/releases/download/$DC_VERSION/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose;
+    sudo chmod +x /usr/local/bin/docker-compose;
+    if ! command_exists docker-compose; then
+      echo "There has been an issue installing Docker Compose. Please, do it and start the script again.";
+      exit 1;
+    fi
+  fi
+
+  if command_exists envsubst; then 
+    echo "Looks like envsubst is here, too... good...";
+  else
+    echo "Gosh! I should get envsubst";
+    sudo apt-get install -y gettext-base;
+    echo "Okay, I've done it.";
+  fi
+
+  if command_exists htpasswd; then
+    echo "htpasswd is installed, great"
+  else
+    echo "Ugh! Installing apache2-utils"
+    sudo apt-get install -y apache2-utils
+  fi
+
+
+  #######
+  # SETTING UP FORLDERS STRUCTURE
+  # ~/
+  #######
+  cd ~;
+  echo "Creating the required folder structure.";
+  mkdir .rxstream;
+  mkdir -p .rxstream/apps_persistent;
+  mkdir -p media/movies;
+  mkdir -p media/tv;
+  mkdir -p media/music;
+
+  ######
+  # GETTING USER CONFIG
+  # ~/
+  ######
+  cd ~;
+  echo "You'll be prompted to enter a domain for each service...";
+  echo "TIP: It's better if you use a subdomain for each service.";
+  echo "E.g. plex.example.com, monitor.example[2].com...";
+  echo "(Make sure they all point to your server with an A record... Obviously)";
+
+  while [ -z "$MONITOR_DOMAIN" ]; do read -p 'Monitor Domain: ' MONITOR_DOMAIN; done
+  export MONITOR_DOMAIN;
+  while [ -z "$TRAEFIK_USER" ]; do read -p "Monitor UI user: " TRAEFIK_USER; done
+  export TRAEFIK_USER;
+  while [ -z "$TRAEFIK_PWD" ]; do read -sp "Monitor UI password: " TRAEFIK_PWD; done
+  export TRAEFIK_PWD;
+  while [ -z "$PLEX_DOMAIN" ]; do read -p 'Plex Domain: ' PLEX_DOMAIN; done
+  export PLEX_DOMAIN;
+  while [ -z "$DELUGE_DOMAIN" ]; do read -p 'Deluge Domain: ' DELUGE_DOMAIN; done
+  export DELUGE_DOMAIN;
+  while [ -z "$SONARR_DOMAIN" ]; do read -p 'Sonarr Domain: ' SONARR_DOMAIN; done
+  export SONARR_DOMAIN;
+  while [ -z "$RADARR_DOMAIN" ]; do read -p 'Radarr Domain: ' RADARR_DOMAIN; done
+  export RADARR_DOMAIN;
+  while [ -z "$PORTAINER_DOMAIN" ]; do read -p 'Portainer (Docker UI) Domain: ' PORTAINER_DOMAIN; done
+  export PORTAINER_DOMAIN;
+  while [ -z "$ACME_EMAIL" ]; do read -p "Your Email (for Let's Encrypt): " ACME_EMAIL; done
+  export ACME_EMAIL;
+
+  ######
+  # SETTING UP TRAEFIK
+  # ~/.rxstream/
+  ######
+  cd ~/.rxstream/;
+  echo "Finally, setting up Traefik (the best stuff)"
+  export TRAEFIK_HASHED=$( htpasswd -nb $TRAEFIK_USER $TRAEFIK_PWD );
+  curl -s https://raw.githubusercontent.com/riadloukili/ams/master/traefik.toml > traefik.toml.tpl; 
+  envsubst < traefik.toml.tpl > traefik.toml;
+  touch acme.json;
+  chmod 600 acme.json;
+  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker;
+
+
+  ######
+  # GETTING DOCKER-COMPOSE.YML
+  # ~/
+  ######
+  cd ~;
+  echo "Getting docker-compose.yml and starting services...";
+  curl -s https://raw.githubusercontent.com/riadloukili/ams/master/docker-compose.yml > $PWD/.rxstream/docker-compose.yml.tpl;
+  envsubst < $PWD/.rxstream/docker-compose.yml.tpl > $PWD/.rxstream/docker-compose.yml;
+
+
+  ######
+  # STARTING DOCKER 
+  # ~/.rxstream/
+  ######
+  cd ~/.rxstream/;  
+  docker-compose up -d;
+  echo "Services started";
+
+}
+
+start_ams() {
+  TMPPWD=$PWD;
+  cd ~/.rxstream/;
+  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker;
+  docker-compose up -d;
+  cd $TMPPWD;  
+}
+
+stop_ams() {
+  TMPPWD=$PWD;
+  cd ~/.rxstream/;
+  docker stop traefik && docker rm traefik;
+  docker-compose down;
+  cd $TMPPWD;  
+}
+
+restart_ams() {
+  stop_ams;
+  start_ams;
+}
+
+
+#######
+# ENTRYPOINT
+#######
+if [ -z "$1" ] || [ "$1" = "install" ]; then
+  install_ams;
+elif [ "$1" = "start" ]; then
+  start_ams;
+elif [ "$1" = "stop" ]; then
+  stop_ams;
+elif [ "$1" = "restart" ]; then
+  restart_ams;
+else
+  echo "INVALID ARG $1"
+  echo "USAGE: $0 [install] | start | stop | restart"
+fi 
