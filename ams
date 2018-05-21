@@ -11,7 +11,10 @@ command_exists () {
 # FUNCTIONS
 ########
 install_ams() {
-  
+  echo "Getting stuff started...";
+
+  sudo apt-get update &> /dev/null;
+
   if command_exists jq; then
     echo "jq exists, I can proceed";
   else
@@ -47,7 +50,7 @@ install_ams() {
     echo "Looks like envsubst is here, too... good...";
   else
     echo "Gosh! I should get envsubst";
-    sudo apt-get install -y gettext-base;
+    sudo apt-get install -y gettext-base &> /dev/null;
     echo "Okay, I've done it.";
   fi
 
@@ -55,7 +58,7 @@ install_ams() {
     echo "htpasswd is installed, great"
   else
     echo "Ugh! Installing apache2-utils"
-    sudo apt-get install -y apache2-utils
+    sudo apt-get install -y apache2-utils &> /dev/null;
   fi
 
 
@@ -65,7 +68,7 @@ install_ams() {
   #######
   cd ~;
   echo "Creating the required folder structure.";
-  mkdir .rxstream;
+  mkdir -p .rxstream;
   mkdir -p .rxstream/apps_persistent;
   mkdir -p media/movies;
   mkdir -p media/tv;
@@ -87,9 +90,9 @@ install_ams() {
   export TRAEFIK_USER;
   while [ -z "$TRAEFIK_PWD" ]; do read -sp "Monitor UI password: " TRAEFIK_PWD; done
   export TRAEFIK_PWD;
+  echo "";
   while [ -z "$PLEX_DOMAIN" ]; do read -p 'Plex Domain: ' PLEX_DOMAIN; done
   export PLEX_DOMAIN;
-  echo ;
   while [ -z "$DELUGE_DOMAIN" ]; do read -p 'Deluge Domain: ' DELUGE_DOMAIN; done
   export DELUGE_DOMAIN;
   while [ -z "$SONARR_DOMAIN" ]; do read -p 'Sonarr Domain: ' SONARR_DOMAIN; done
@@ -112,8 +115,8 @@ install_ams() {
   envsubst < traefik.toml.tpl > traefik.toml;
   touch acme.json;
   chmod 600 acme.json;
-  docker network create rxproxy;
-  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker;
+  docker network create rxproxy &> /dev/null;;
+  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker &> /dev/null;;
 
 
   ######
@@ -131,7 +134,7 @@ install_ams() {
   # ~/.rxstream/
   ######
   cd ~/.rxstream/;  
-  docker-compose up -d;
+  docker-compose up -d &> /dev/null;
   echo "Services started";
 
 }
@@ -141,17 +144,21 @@ start_ams() {
   cd ~/.rxstream/;
   while [ -z "$MONITOR_DOMAIN" ]; do read -p 'Monitor Domain: ' MONITOR_DOMAIN; done
   export MONITOR_DOMAIN;
-  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker;
-  docker-compose up -d;
+  echo "Starting...";
+  docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker &> /dev/null;
+  docker-compose up -d &> /dev/null;
   cd $TMPPWD;  
+  echo "Started";
 }
 
 stop_ams() {
   TMPPWD=$PWD;
   cd ~/.rxstream/;
-  docker stop traefik && docker rm traefik;
-  docker-compose down;
+  echo "Stopping";
+  docker stop traefik && docker rm traefik &> /dev/null;;
+  docker-compose down &> /dev/null;
   cd $TMPPWD;  
+  echo "Stopped";
 }
 
 restart_ams() {
