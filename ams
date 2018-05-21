@@ -139,6 +139,8 @@ install_ams() {
 start_ams() {
   TMPPWD=$PWD;
   cd ~/.rxstream/;
+  while [ -z "$MONITOR_DOMAIN" ]; do read -p 'Monitor Domain: ' MONITOR_DOMAIN; done
+  export MONITOR_DOMAIN;
   docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker;
   docker-compose up -d;
   cd $TMPPWD;  
