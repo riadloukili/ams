@@ -114,6 +114,8 @@ install_ams() {
   curl -s https://raw.githubusercontent.com/riadloukili/ams/master/traefik.toml > traefik.toml.tpl; 
   envsubst < traefik.toml.tpl > traefik.toml;
   touch acme.json;
+  touch .monitor-domain;
+  echo $MONITOR_DOMAIN > .monitor-domain;
   chmod 600 acme.json;
   docker network create rxproxy &> /dev/null;
   docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker &> /dev/null;
@@ -142,8 +144,7 @@ install_ams() {
 start_ams() {
   TMPPWD=$PWD;
   cd ~/.rxstream/;
-  while [ -z "$MONITOR_DOMAIN" ]; do read -p 'Monitor Domain: ' MONITOR_DOMAIN; done
-  export MONITOR_DOMAIN;
+  export MONITOR_DOMAIN=$(cat .monitor-domain);
   echo "Starting...";
   docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/traefik.toml:/traefik.toml -v $PWD/acme.json:/acme.json -p 80:80 -p 443:443 -l traefik.frontend.rule=Host:$MONITOR_DOMAIN -l traefik.port=8080 --network rxproxy --name traefik traefik:alpine --docker &> /dev/null;
   docker-compose up -d &> /dev/null;
