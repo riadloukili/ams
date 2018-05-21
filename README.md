@@ -2,7 +2,7 @@
 A media server using Traefik with Plex, Sonarr, Radarr, Deluge and Portainer
 
 # Installation
-This script has only been tested in Ubuntu 16.04.Though it's not guaranteed, it may work on other dist as well.
+This script has only been tested in Ubuntu 16.04. Though it's not guaranteed, it may work on other dist as well.
 
 To install run:
 ```shell
