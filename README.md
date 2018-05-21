@@ -17,6 +17,8 @@ chmod +x ams
 
 *Note 2: You'll need to set up A records in your domain provider pointing to your server's ip*
 
+*Note 3: Follow [this installation guide](https://github.com/riadloukili/ams/wiki/1.-Installation-Guide) for more details*
+
 # Usage
 
 It's pretty straightforward
@@ -30,7 +32,7 @@ It's pretty straightforward
 
 # Configure
 
-A full tutorial can be found [here](https://github.com/riadloukili/ams/wiki/Installation-Guide).
+A full tutorial can be found [here](https://github.com/riadloukili/ams/wiki/2.-Configuration-Guide).
 
 # Contribution
 
