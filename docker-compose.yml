@@ -1,0 +1,119 @@
+version: "3"
+
+services:
+
+  # STREAMING SERVICE
+  plex:
+    image: binhex/arch-plexpass
+    labels:
+      - traefik.backend=plex
+      - traefik.frontend.rule=Host:$PLEX_DOMAIN
+      - traefik.docker.network=rxproxy
+      - traefik.port=32400
+    networks:
+      - internal
+      - rxproxy
+    volumes:
+      ## LINKED WITH THE MEDIA LIBRARY
+      - $PWD/media:/media
+      ###
+      - $PWD/.rxstream/apps_persistent/plex:/config
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - UMASK=000
+      - PUID=0
+      - PGID=0
+
+
+  deluge:
+    image: binhex/arch-deluge
+    labels:
+      - traefik.backend=deluge
+      - traefik.frontend.rule=Host:$DELUGE_DOMAIN
+      - traefik.docker.network=rxproxy
+      - traefik.port=8112
+    networks:
+      - internal
+      - rxproxy
+    volumes:
+      ## LINKED WITH DOWNLOADED DATA
+      - $PWD/.rxstream/apps_persistent/data:/data
+      ###
+      - $PWD/.rxstream/apps_persistent/deluge/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - UMASK=000
+      - PUID=0
+      - PGID=0
+
+
+  sonarr:
+    image: binhex/arch-sonarr
+    labels:
+      - traefik.backend=sonarr
+      - traefik.frontend.rule=Host:$SONARR_DOMAIN
+      - traefik.docker.network=rxproxy
+      - traefik.port=8989
+    networks:
+      - internal
+      - rxproxy
+    volumes:
+      ## LINKED WITH MEDIA LIBRARY
+      - $PWD/media/tv:/media
+      ## AND LINKED WITH DOWNLOADED DATA
+      - $PWD/.rxstream/apps_persistent/data:/data
+      ###
+      - $PWD/.rxstream/apps_persistent/sonarr/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - UMASK=000
+      - PUID=0
+      - PGID=0
+
+
+  radarr:
+    image: binhex/arch-radarr
+    labels:
+      - traefik.backend=radarr
+      - traefik.frontend.rule=Host:$RADARR_DOMAIN
+      - traefik.docker.network=rxproxy
+      - traefik.port=7878
+    networks:
+      - internal
+      - rxproxy
+    volumes:
+      ## LINKED WITH MEDIA LIBRARY
+      - $PWD/media/movies:/media
+      ## AND LINKED WITH DOWNLOADED DATA
+      - $PWD/.rxstream/apps_persistent/data:/data
+      ###
+      - $PWD/.rxstream/apps_persistent/radarr/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - UMASK=000
+      - PUID=0
+      - PGID=0
+
+
+  ## THIS IS ONLY FOR VIZUALIZATION (DOCKER UI)
+  portainer:
+    image: portainer/portainer
+    labels:
+      - traefik.backend=docker
+      - traefik.frontend.rule=Host:$PORTAINER_DOMAIN
+      - traefik.docker.network=rxproxy
+      - traefik.port=9000
+    networks:
+      - internal
+      - rxproxy
+    volumes:
+      - $PWD/.rxstream/apps_persistent/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+
+
+networks:
+  rxproxy:
+    external: true
+  internal:
+    external: false
