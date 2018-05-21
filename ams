@@ -89,6 +89,7 @@ install_ams() {
   export TRAEFIK_PWD;
   while [ -z "$PLEX_DOMAIN" ]; do read -p 'Plex Domain: ' PLEX_DOMAIN; done
   export PLEX_DOMAIN;
+  echo ;
   while [ -z "$DELUGE_DOMAIN" ]; do read -p 'Deluge Domain: ' DELUGE_DOMAIN; done
   export DELUGE_DOMAIN;
   while [ -z "$SONARR_DOMAIN" ]; do read -p 'Sonarr Domain: ' SONARR_DOMAIN; done
