@@ -126,6 +126,8 @@ install_ams() {
   # ~/
   ######
   cd ~;
+  export PUID=$(id -u)
+  export PGID=$(id -g)
   echo "Getting docker-compose.yml and starting services...";
   curl -s https://raw.githubusercontent.com/riadloukili/ams/master/docker-compose.yml > $PWD/.rxstream/docker-compose.yml.tpl;
   envsubst < $PWD/.rxstream/docker-compose.yml.tpl > $PWD/.rxstream/docker-compose.yml;
